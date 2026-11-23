@@ -52,9 +52,15 @@ $config = [
             'enablePrettyUrl' => true,
             'showScriptName' => false,
             'rules' => [
+                // TODO: add pretty rule for orders listing
             ],
         ],
         */
+    ],
+    'modules' => [
+        'orders_listing' => [
+            'class' => 'app\modules\orders_listing\Module',
+        ],
     ],
     'params' => $params,
 ];
