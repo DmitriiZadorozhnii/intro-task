@@ -8,6 +8,7 @@ enum OrderStatusEnum: int
     case in_progress = 1;
     case completed = 2;
     case canceled = 3;
+    // TODO: статус fail специально не соответствует названию статуса на фронте?
     case fail = 4;
 
     public static function toArray(): array

@@ -16,12 +16,47 @@ class OrderListingDTO
         protected ServiceCounterDTO $serviceCounter,
         protected string $status,
         protected string $mode,
-        protected DateTimeImmutable $createdAt,
+        protected string $createdAt,
     ) {
     }
 
     public function getOrderId(): int
     {
         return $this->orderId;
+    }
+
+    public function getUserNameDTO(): UserNameDTO
+    {
+        return $this->userNameDTO;
+    }
+
+    public function getLink(): string
+    {
+        return $this->link;
+    }
+
+    public function getQuantity(): int
+    {
+        return $this->quantity;
+    }
+
+    public function getServiceCounter(): ServiceCounterDTO
+    {
+        return $this->serviceCounter;
+    }
+
+    public function getStatus(): string
+    {
+        return $this->status;
+    }
+
+    public function getMode(): string
+    {
+        return $this->mode;
+    }
+
+    public function getCreatedAt(): string
+    {
+        return $this->createdAt;
     }
 }

@@ -46,6 +46,15 @@ $config = [
                 ],
             ],
         ],
+        'i18n' => [
+            'translations' => [
+                'orders' => [
+                    'class' => \yii\i18n\PhpMessageSource::class,
+                    'basePath' => '@app/modules/orders_listing/messages',
+                    'sourceLanguage' => 'en',
+                ],
+            ],
+        ],
         'db' => $db,
         /*
         'urlManager' => [
@@ -62,6 +71,7 @@ $config = [
             'class' => 'app\modules\orders_listing\Module',
         ],
     ],
+    'language' => env('APP_LANGUAGE', 'en'),
     'params' => $params,
 ];
 

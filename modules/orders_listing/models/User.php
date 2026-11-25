@@ -14,7 +14,6 @@ use Yii;
 class User extends \yii\db\ActiveRecord
 {
 
-
     /**
      * {@inheritdoc}
      */
@@ -47,4 +46,8 @@ class User extends \yii\db\ActiveRecord
         ];
     }
 
+    public function getOrders()
+    {
+        return $this->hasMany(Order::class, ['user_id' => 'id']);
+    }
 }

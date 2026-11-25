@@ -19,7 +19,6 @@ use Yii;
 class Order extends \yii\db\ActiveRecord
 {
 
-
     /**
      * {@inheritdoc}
      */
@@ -58,4 +57,13 @@ class Order extends \yii\db\ActiveRecord
         ];
     }
 
+    public function getUser()
+    {
+        return $this->hasOne(User::class, ['id' => 'user_id']);
+    }
+
+    public function getService()
+    {
+        return $this->hasOne(Service::class, ['id' => 'service_id']);
+    }
 }

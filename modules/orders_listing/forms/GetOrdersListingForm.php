@@ -20,26 +20,28 @@ class GetOrdersListingForm extends Model
     public function rules()
     {
         return [
-            [['id', 'status', 'mode', 'link', 'service_id', 'user_first_name', 'user_last_name'], 'nullable'],
+            //[['id', 'status', 'mode', 'link', 'service_id', 'user_first_name', 'user_last_name'], 'trim'],
             ['id', 'integer'],
             ['status', 'in', 'range' => OrderStatusEnum::getNames()],
             ['mode', 'in', 'range' => OrderModeEnum::getNames()],
             ['link', 'string', 'max' => 255],
-            ['service_id', 'validateServiceId', 'skipOnEmpty' => true],
+            // TODO: поменять на поиск на два поля - search и search-type вместо id, service_id, user_f..., user_l...
+            ['service_id', 'integer'],
             ['user_first_name', 'string', 'max' => 255],
             ['user_last_name', 'string', 'max' => 255],
         ];
     }
 
-    public function entity(): null|GetOrdersListingEntity
+    public function entity(): false|GetOrdersListingEntity
     {
         if (!$this->validate()) {
-            return null;
+            return false;
         }
+        //dd($this);
         return new GetOrdersListingEntity(
             $this->id,
-            OrderStatusEnum::getValueByName($this->status),
-            OrderModeEnum::getValueByName($this->mode),
+            !is_null($this->status) ? OrderStatusEnum::getValueByName($this->status) : null,
+            !is_null($this->mode) ? OrderModeEnum::getValueByName($this->mode) : null,
             $this->link,
             $this->service_id,
             $this->user_first_name,

@@ -13,7 +13,6 @@ use Yii;
 class Service extends \yii\db\ActiveRecord
 {
 
-
     /**
      * {@inheritdoc}
      */
@@ -44,5 +43,4 @@ class Service extends \yii\db\ActiveRecord
             'name' => 'Name',
         ];
     }
-
 }

@@ -19,6 +19,12 @@ class Module extends \yii\base\Module
     {
         parent::init();
 
-        // custom initialization code goes here
+        //$this->setViewPath('@app/modules/orders_listing/views');
+
+        \Yii::$app->i18n->translations['modules/orders_listing/*'] = [
+            'class' => 'yii\i18n\PhpMessageSource',
+            'basePath' => '@app/modules/orders_listing/messages',
+            'sourceLanguage' => 'en-US',
+        ];
     }
 }
