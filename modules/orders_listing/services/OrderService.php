@@ -49,8 +49,8 @@ class OrderService
 
         foreach ($this->orderRepository->exportBatch($queryDTO, 1000) as $order) {
             $serviceId = (int) $order['service_id'];
-            $fullName = trim((string)($order['first_name'] ?? '') . ' ' . (string)($order['last_name'] ?? ''));
-            $createdTs = is_numeric($order['created_at']) ? (int)$order['created_at'] : strtotime((string)$order['created_at']);
+            $fullName = trim((string) ($order['first_name'] ?? '') . ' ' . (string) ($order['last_name'] ?? ''));
+            $createdTs = is_numeric($order['created_at']) ? (int) $order['created_at'] : strtotime((string) $order['created_at']);
             $createdAt = $createdTs ? date('Y-m-d H:i:s', $createdTs) : '';
             $statusName = Yii::t('orders', OrderStatusEnum::tryFrom($order['status'])?->name ?? $order['status']);
             $modeName = Yii::t('orders', OrderModeEnum::tryFrom($order['mode'])?->name ?? $order['mode']);

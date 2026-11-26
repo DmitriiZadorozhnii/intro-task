@@ -24,8 +24,6 @@ class OrderRepository
 
         $this->applyFilters($query, $queryDTO);
 
-        //dd($query->createCommand()->getRawSql());
-
         $serviceCounts = $this->getServiceCounts($query);
         $totalCount = (int) array_sum(array_column($serviceCounts, 'cnt'));
         $pagination = new Pagination([
