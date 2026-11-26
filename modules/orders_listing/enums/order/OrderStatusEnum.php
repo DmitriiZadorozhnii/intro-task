@@ -8,8 +8,7 @@ enum OrderStatusEnum: int
     case in_progress = 1;
     case completed = 2;
     case canceled = 3;
-    // TODO: статус fail специально не соответствует названию статуса на фронте?
-    case fail = 4;
+    case error = 4;
 
     public static function toArray(): array
     {
@@ -34,5 +33,10 @@ enum OrderStatusEnum: int
     public static function getValueByName(string $name): ?int
     {
         return self::toArray()[$name] ?? null;
+    }
+
+    public function getNameByValue(int $value): ?string
+    {
+        return self::toArray()[$value] ?? null;
     }
 }

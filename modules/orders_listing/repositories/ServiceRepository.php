@@ -8,6 +8,6 @@ class ServiceRepository
 {
     public function getAllServices(): array
     {
-        return Service::find()->select(['id', 'name'])->asArray()->all();
+        return Service::find()->select(['id', 'name'])->orderBy('id')->asArray()->all();
     }
 }

@@ -10,9 +10,18 @@ return [
     'Canceled' => 'Отменён',
     'Error' => 'Ошибка',
 
+    'pending' => 'В ожидании',
+    'in_progress' => 'В работе',
+    'completed' => 'Завершён',
+    'canceled' => 'Отменён',
+    'error' => 'Ошибка',
+
     'All' => 'Все',
     'Manual' => 'Ручной',
     'Auto' => 'Авто',
+
+    'manual' => 'Ручной',
+    'auto' => 'Авто',
 
     'Search orders' => 'Поиск заказов',
     'Order ID' => 'ID заказа',
@@ -28,6 +37,8 @@ return [
     'Created' => 'Создан',
 
     'No orders found.' => 'Заказы не найдены.',
+
+    'Toggle navigation' => 'Переключить навигацию',
 
     '{from} to {to} of {total}' => '{from} – {to} из {total}',
     '{total} orders' => 'Всего заказов: {total}',

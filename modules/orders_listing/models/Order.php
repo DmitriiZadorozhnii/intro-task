@@ -2,7 +2,7 @@
 
 namespace app\modules\orders_listing\models;
 
-use Yii;
+use yii\db\ActiveRecord;
 
 /**
  * This is the model class for table "orders".
@@ -16,45 +16,11 @@ use Yii;
  * @property int $created_at
  * @property int $mode 0 - Manual, 1 - Auto
  */
-class Order extends \yii\db\ActiveRecord
+class Order extends ActiveRecord
 {
-
-    /**
-     * {@inheritdoc}
-     */
     public static function tableName()
     {
         return 'orders';
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function rules()
-    {
-        return [
-            [['user_id', 'link', 'quantity', 'service_id', 'status', 'created_at', 'mode'], 'required'],
-            [['user_id', 'quantity', 'service_id', 'status', 'created_at', 'mode'], 'integer'],
-            [['link'], 'string', 'max' => 300],
-        ];
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function attributeLabels()
-    {
-        // TODO: add translate with Yii::t()
-        return [
-            'id' => 'ID',
-            'user_id' => 'User ID',
-            'link' => 'Link',
-            'quantity' => 'Quantity',
-            'service_id' => 'Service ID',
-            'status' => 'Status',
-            'created_at' => 'Created At',
-            'mode' => 'Mode',
-        ];
     }
 
     public function getUser()

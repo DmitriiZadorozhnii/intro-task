@@ -4,13 +4,9 @@ namespace app\modules\orders_listing\assets;
 
 use yii\web\AssetBundle;
 
-class OrderAsset extends AssetBundle
+class OrdersAsset extends AssetBundle
 {
-    public function __construct()
-    {
-        $this->sourcePath = __DIR__;
-        parent::__construct();
-    }
+    public $sourcePath = '@app/modules/orders_listing/assets/web';
 
     public $css = [
         'css/bootstrap.min.css',

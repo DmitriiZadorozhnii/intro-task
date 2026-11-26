@@ -2,16 +2,19 @@
 
 namespace app\modules\orders_listing\controllers;
 
-use app\modules\orders_listing\enums\order\OrderModeEnum;
-use app\modules\orders_listing\enums\order\OrderStatusEnum;
-use app\modules\orders_listing\forms\GetOrdersListingForm;
-use app\modules\orders_listing\services\DTOs\PaginationDTO;
+use app\modules\orders_listing\dto\GetOrdersQuery;
+use app\modules\orders_listing\models\GetOrdersFilter;
 use app\modules\orders_listing\services\OrderService;
-use yii\data\Pagination;
+use Yii;
+use yii\web\BadRequestHttpException;
 use yii\web\Controller;
+use yii\web\Response;
 
 class OrderController extends Controller
 {
+    public const DEFAULT_PAGE = 1;
+    public const DEFAULT_PER_PAGE = 100;
+
     public function __construct(
         $id,
         $module,
@@ -23,39 +26,61 @@ class OrderController extends Controller
 
     public function actionIndex(): string
     {
-        $request = \Yii::$app->request;
-        $filter = new GetOrdersListingForm();
-        $filter->load($request->get());
-        $entity = $filter->entity();
-        if (!$filter->validate() || is_null($entity = $filter->entity())) {
-            // TODO: add my exception (or throw $filter to view)
+        $filter = new GetOrdersFilter();
+        $filter->load(Yii::$app->request->get());
+        if (!$filter->validate()) {
+            throw new BadRequestHttpException(
+                'Invalid filter parameters: ' . implode('; ', $filter->getFirstErrors())
+            );
         }
-        //dd($request->get('status'));
-        $page = (int) $request->get('page', 1);
-        $perPage = (int) $request->get('pageSize', 100);
-        $result = $this->orderService->getOrdersByFilters($entity, $page, $perPage);
-        /** @var PaginationDTO $paginationDTO */
-        $paginationDTO = $result['pagination'];
-        $statuses = OrderStatusEnum::getNames();
-        $modes = OrderModeEnum::getNames();
-        // TODO: передавать $pagination в сервис
-        $pagination = new Pagination([
-            'totalCount' => $paginationDTO->getTotalCount(),
-            'pageSize' => $perPage,
-            'params' => $request->queryParams,
-        ]);
+        $queryDTO = GetOrdersQuery::fromFilter($filter);
+        $page = max(1, (int) Yii::$app->request->get('page', self::DEFAULT_PAGE));
+        $perPage = (int) Yii::$app->request->get('per-page', self::DEFAULT_PER_PAGE);
+        $result = $this->orderService->getOrdersByFilters($queryDTO, $page, $perPage);
+        $currentParams = [
+            'status' => $filter->status,
+            'search' => $filter->search,
+            'search-type' => $filter->searchType,
+            'serviceId' => $filter->serviceId,
+            'mode' => $filter->mode,
+        ];
+
         return $this->render('index', [
-            'orders' => $result['items'],
-            'pagination' => $pagination, // TODO: может все таки использовать свой PaginationDTO
-            'totalCount' => $paginationDTO->getTotalCount(),
-            'statuses' => $statuses,
-            'currentStatus' => $entity->getStatus(),
-            'modes' => $modes,
-            'currentMode' => $entity->getMode(),
-            'currentService' => $entity->getServiceId(),
-            'serviceCounts' => [], // TODO: не забыть добавить сюда сервисы с глобальными счетчиками
-            'searchQuery' => 'fdsf',//$entity->getSearchQuery(),
-            'searchType' => 'fdsfs',//$entity->getSearchType(),
+            'filter' => $filter,
+            'dataProvider' => $result['dataProvider'],
+            'serviceCounts' => $result['serviceCounts'],
+            'services' => $result['services'],
+            'currentParams' => $currentParams,
+        ]);
+    }
+
+    public function actionExport(): Response
+    {
+        $filter = new GetOrdersFilter();
+        $filter->load(Yii::$app->request->get());
+        if (!$filter->validate()) {
+            throw new BadRequestHttpException(
+                'Invalid filter parameters: ' . implode('; ', $filter->getFirstErrors())
+            );
+        }
+        $queryDTO = GetOrdersQuery::fromFilter($filter);
+        $fileName = 'orders_' . date('Y-m-d_H-i-s') . '.csv';
+        $file = fopen('php://temp', 'w+');
+        if ($file === false) {
+            throw new \RuntimeException('Cannot open temp stream');
+        }
+        // XXX: add mark for utf-8 to csv file
+        fwrite($file, "\xEF\xBB\xBF");
+        foreach ($this->orderService->exportOrdersCsv($queryDTO) as $row) {
+            fputcsv($file, $row, ';');
+        }
+        rewind($file);
+        $content = stream_get_contents($file);
+        fclose($file);
+
+        return Yii::$app->response->sendContentAsFile($content, $fileName, [
+            'mimeType' => 'text/csv',
+            'inline'   => false,
         ]);
     }
 }

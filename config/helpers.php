@@ -27,3 +27,13 @@ if (!function_exists('env')) {
         return $value;
     }
 }
+
+if (!function_exists('cleanLetters')) {
+    function cleanLetters(string $value): string
+    {
+        $value = preg_replace('/\s+/u', ' ', $value) ?? '';
+        $value = preg_replace('/[^\p{L} ]/u', '', $value) ?? '';
+        $value = preg_replace('/ {2,}/u', ' ', $value) ?? '';
+        return trim($value);
+    }
+}

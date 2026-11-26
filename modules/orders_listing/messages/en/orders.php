@@ -10,9 +10,18 @@ return [
     'Canceled' => 'Canceled',
     'Error' => 'Error',
 
+    'pending' => 'Pending',
+    'in_progress' => 'In progress',
+    'completed' => 'Completed',
+    'canceled' => 'Canceled',
+    'error' => 'Error',
+
     'All' => 'All',
     'Manual' => 'Manual',
     'Auto' => 'Auto',
+
+    'manual' => 'Manual',
+    'auto' => 'Auto',
 
     'Search orders' => 'Search orders',
     'Order ID' => 'Order ID',
@@ -28,6 +37,8 @@ return [
     'Created' => 'Created',
 
     'No orders found.' => 'No orders found.',
+
+    'Toggle navigation' => 'Toggle navigation',
 
     '{from} to {to} of {total}' => '{from} to {to} of {total}',
     '{total} orders' => '{total} orders',

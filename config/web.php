@@ -48,23 +48,23 @@ $config = [
         ],
         'i18n' => [
             'translations' => [
-                'orders' => [
+                'orders*' => [
                     'class' => \yii\i18n\PhpMessageSource::class,
                     'basePath' => '@app/modules/orders_listing/messages',
-                    'sourceLanguage' => 'en',
+                    'sourceLanguage' => 'en-US',
+                    'forceTranslation' => true,
                 ],
             ],
         ],
         'db' => $db,
-        /*
         'urlManager' => [
             'enablePrettyUrl' => true,
             'showScriptName' => false,
             'rules' => [
-                // TODO: add pretty rule for orders listing
+                'orders' => 'orders_listing/order/index',
             ],
         ],
-        */
+
     ],
     'modules' => [
         'orders_listing' => [

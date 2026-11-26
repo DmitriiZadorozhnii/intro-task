@@ -2,13 +2,13 @@
 
 namespace app\modules\orders_listing\services;
 
-use app\modules\orders_listing\forms\entities\GetOrdersListingEntity;
+use app\modules\orders_listing\dto\GetOrdersQuery;
+use app\modules\orders_listing\enums\order\OrderModeEnum;
+use app\modules\orders_listing\enums\order\OrderStatusEnum;
 use app\modules\orders_listing\repositories\OrderRepository;
 use app\modules\orders_listing\repositories\ServiceRepository;
-use app\modules\orders_listing\services\DTOs\OrderListingDTO;
-use app\modules\orders_listing\services\DTOs\PaginationDTO;
-use app\modules\orders_listing\services\DTOs\service\ServiceCounterDTO;
-use app\modules\orders_listing\services\DTOs\user\UserNameDTO;
+use Generator;
+use Yii;
 
 class OrderService
 {
@@ -18,43 +18,54 @@ class OrderService
     ) {
     }
 
-    // TODO: добавить список сервисов с каутами (глобальный) и общий каунт на все записи
-    public function getOrdersByFilters(GetOrdersListingEntity $entity, int $page, int $perPage): array
+    public function getOrdersByFilters(GetOrdersQuery $orderDTO, int $page, int $perPage): array
     {
         $services = $this->serviceRepository->getAllServices();
-        $data = $this->orderRepository->getOrdersByFilters($entity, $page, $perPage);
-        $orders = $data['orders'];
-        $serviceCounts = $data['serviceCounts'];
-
-        $services = array_column($services, 'name', 'id');
-        $serviceCounts = array_column($serviceCounts, 'cnt', 'service_id');
-
-        $items = [];
-        foreach ($orders as $order) {
-            $serviceId = (int) $order['service_id'];
-
-            $items[] = new OrderListingDTO(
-                (int) $order['id'],
-                new UserNameDTO(
-                    (string) $order['first_name'],
-                    (string) $order['last_name'],
-                ),
-                (string) $order['link'],
-                (int) $order['quantity'],
-                new ServiceCounterDTO(
-                    $serviceId,
-                    $services[$serviceId],
-                    $serviceCounts[$serviceId] ?? 0,
-                ),
-                (string) $order['status'],
-                (string) $order['mode'],
-                \Yii::$app->formatter->asDatetime($order['created_at']),
-            );
-        }
+        $result = $this->orderRepository->getOrdersByFilters($orderDTO, $page, $perPage);
 
         return [
-            'items' => $items,
-            'pagination' => new PaginationDTO($data['page'], $data['perPage'], $data['totalCount'], $data['totalPages']),
+            'services' => $services,
+            'dataProvider' => $result->getActiveDataProvider(),
+            'serviceCounts' => $result->getServiceCounts(),
         ];
+    }
+
+    public function exportOrdersCsv(GetOrdersQuery $queryDTO): Generator
+    {
+        $services = $this->serviceRepository->getAllServices();
+        $servicesById = array_column($services, null, 'id');
+
+        yield [
+            Yii::t('orders', 'ID'),
+            Yii::t('orders', 'User'),
+            Yii::t('orders', 'Link'),
+            Yii::t('orders', 'Quantity'),
+            Yii::t('orders', 'Service ID'),
+            Yii::t('orders', 'Service Name'),
+            Yii::t('orders', 'Status'),
+            Yii::t('orders', 'Mode'),
+            Yii::t('orders', 'Created'),
+        ];
+
+        foreach ($this->orderRepository->exportBatch($queryDTO, 1000) as $order) {
+            $serviceId = (int) $order['service_id'];
+            $fullName = trim((string)($order['first_name'] ?? '') . ' ' . (string)($order['last_name'] ?? ''));
+            $createdTs = is_numeric($order['created_at']) ? (int)$order['created_at'] : strtotime((string)$order['created_at']);
+            $createdAt = $createdTs ? date('Y-m-d H:i:s', $createdTs) : '';
+            $statusName = Yii::t('orders', OrderStatusEnum::tryFrom($order['status'])?->name ?? $order['status']);
+            $modeName = Yii::t('orders', OrderModeEnum::tryFrom($order['mode'])?->name ?? $order['mode']);
+
+            yield [
+                $order['id'],
+                $fullName,
+                $order['link'],
+                $order['quantity'],
+                $serviceId,
+                $servicesById[$serviceId]['name'] ?? '',
+                $statusName,
+                $modeName,
+                $createdAt,
+            ];
+        }
     }
 }

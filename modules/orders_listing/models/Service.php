@@ -2,7 +2,7 @@
 
 namespace app\modules\orders_listing\models;
 
-use Yii;
+use yii\db\ActiveRecord;
 
 /**
  * This is the model class for table "services".
@@ -10,37 +10,10 @@ use Yii;
  * @property int $id
  * @property string $name
  */
-class Service extends \yii\db\ActiveRecord
+class Service extends ActiveRecord
 {
-
-    /**
-     * {@inheritdoc}
-     */
     public static function tableName()
     {
         return 'services';
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function rules()
-    {
-        return [
-            [['name'], 'required'],
-            [['name'], 'string', 'max' => 300],
-        ];
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function attributeLabels()
-    {
-        // TODO: add translate with Yii::t()
-        return [
-            'id' => 'ID',
-            'name' => 'Name',
-        ];
     }
 }
