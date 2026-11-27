@@ -44,9 +44,6 @@ WORKDIR /var/www
 COPY --chown=app:app . .
 RUN chown -R app:app /var/www
 
-#COPY docker/cron/yii-scheduler /etc/cron.d/yii-scheduler
-#RUN chmod 0644 /etc/cron.d/yii-scheduler
-
 USER app
 RUN composer install --no-dev --no-interaction --prefer-dist --optimize-autoloader
 

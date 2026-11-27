@@ -33,7 +33,7 @@ class OrdersIndexResultDTO
             $count = $this->serviceCounts[$id] ?? 0;
             $items[] = [
                 'value' => $id,
-                'prefix' => $count,
+                'prefix' => $id,
                 'label' => (string) $service['name'],
                 'count' => $count,
                 'disabled' => $count === 0,
