@@ -15,6 +15,7 @@ class GetOrdersQuery
         protected ?int $searchType,
         protected ?int $serviceId,
         protected ?int $mode,
+        protected int $page = GetOrdersFilter::DEFAULT_PAGE,
     ) {
     }
 
@@ -43,20 +44,31 @@ class GetOrdersQuery
         return $this->mode;
     }
 
+    public function getPage(): int
+    {
+        return $this->page;
+    }
+
+    public function hasSearch(): bool
+    {
+        return $this->search !== null && $this->search !== '';
+    }
+
     public static function fromFilter(GetOrdersFilter $filter): self
     {
         $searchType = $filter->searchType !== null ? (int) $filter->searchType : null;
-        $serviceId = $filter->serviceId !== null ? (int) $filter->serviceId : null;
-        $search = $filter->search;
+        $search = $filter->search !== null ? (string) $filter->search : null;
         if ($search !== null && $searchType === SearchTypeEnum::id->value) {
             $search = (string) (int) $search;
         }
+
         return new self(
-            !is_null($filter->status) ? OrderStatusEnum::getValueByName($filter->status) : null,
+            $filter->status !== null ? OrderStatusEnum::getValueByName($filter->status) : null,
             $search,
             $searchType,
-            $serviceId,
-            !is_null($filter->mode) ? OrderModeEnum::getValueByName($filter->mode) : null,
+            $filter->serviceId !== null ? (int) $filter->serviceId : null,
+            $filter->mode !== null ? OrderModeEnum::getValueByName($filter->mode) : null,
+            max(GetOrdersFilter::DEFAULT_PAGE, (int) $filter->page),
         );
     }
 }

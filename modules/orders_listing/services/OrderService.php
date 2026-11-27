@@ -3,8 +3,10 @@
 namespace app\modules\orders_listing\services;
 
 use app\modules\orders_listing\dto\GetOrdersQuery;
+use app\modules\orders_listing\dto\OrdersIndexResultDTO;
 use app\modules\orders_listing\enums\order\OrderModeEnum;
 use app\modules\orders_listing\enums\order\OrderStatusEnum;
+use app\modules\orders_listing\helpers\CsvHelper;
 use app\modules\orders_listing\repositories\OrderRepository;
 use app\modules\orders_listing\repositories\ServiceRepository;
 use Generator;
@@ -12,28 +14,66 @@ use Yii;
 
 class OrderService
 {
+    private const PAGE_SIZE = 100;
+    private const EXPORT_BATCH_SIZE = 1000;
+
     public function __construct(
         private readonly OrderRepository $orderRepository,
         private readonly ServiceRepository $serviceRepository,
     ) {
     }
 
-    public function getOrdersByFilters(GetOrdersQuery $orderDTO, int $page, int $perPage): array
+    /**
+     * @param GetOrdersQuery $queryDTO
+     * @return OrdersIndexResultDTO
+     */
+    public function getOrdersByFilters(GetOrdersQuery $queryDTO): OrdersIndexResultDTO
     {
-        $services = $this->serviceRepository->getAllServices();
-        $result = $this->orderRepository->getOrdersByFilters($orderDTO, $page, $perPage);
+        $result = $this->orderRepository->getOrdersByFilters($queryDTO, self::PAGE_SIZE);
 
-        return [
-            'services' => $services,
-            'dataProvider' => $result->getActiveDataProvider(),
-            'serviceCounts' => $result->getServiceCounts(),
-        ];
+        return new OrdersIndexResultDTO(
+            $result->getActiveDataProvider(),
+            $result->getServiceCounts(),
+            $this->serviceRepository->getAllServices(),
+        );
     }
 
-    public function exportOrdersCsv(GetOrdersQuery $queryDTO): Generator
+    /**
+     * @return string
+     */
+    public function getExportFileName(): string
     {
-        $services = $this->serviceRepository->getAllServices();
-        $servicesById = array_column($services, null, 'id');
+        return 'orders_' . date('Y-m-d_H-i-s') . '.csv';
+    }
+
+    /**
+     * @param GetOrdersQuery $queryDTO
+     * @return Generator<int, string>
+     */
+    public function exportOrdersCsvStream(GetOrdersQuery $queryDTO): Generator
+    {
+        // XXX: mark for utf-8
+        yield "\xEF\xBB\xBF";
+
+        $buffer = '';
+        $count = 0;
+        foreach ($this->exportOrdersCsv($queryDTO) as $row) {
+            $count++;
+            $buffer .= CsvHelper::encodeRow($row);
+            if ($count % 1000 === 0) {
+                yield $buffer;
+                $buffer = '';
+            }
+        }
+        if ($buffer !== '') {
+            yield $buffer;
+        }
+    }
+
+    private function exportOrdersCsv(GetOrdersQuery $queryDTO): Generator
+    {
+        $servicesById = array_column($this->serviceRepository->getAllServices(), null, 'id');
+        $formatter = Yii::$app->formatter;
 
         yield [
             Yii::t('orders', 'ID'),
@@ -47,24 +87,18 @@ class OrderService
             Yii::t('orders', 'Created'),
         ];
 
-        foreach ($this->orderRepository->exportBatch($queryDTO, 1000) as $order) {
+        foreach ($this->orderRepository->exportBatch($queryDTO, self::EXPORT_BATCH_SIZE) as $order) {
             $serviceId = (int) $order['service_id'];
-            $fullName = trim((string) ($order['first_name'] ?? '') . ' ' . (string) ($order['last_name'] ?? ''));
-            $createdTs = is_numeric($order['created_at']) ? (int) $order['created_at'] : strtotime((string) $order['created_at']);
-            $createdAt = $createdTs ? date('Y-m-d H:i:s', $createdTs) : '';
-            $statusName = Yii::t('orders', OrderStatusEnum::tryFrom($order['status'])?->name ?? $order['status']);
-            $modeName = Yii::t('orders', OrderModeEnum::tryFrom($order['mode'])?->name ?? $order['mode']);
-
             yield [
                 $order['id'],
-                $fullName,
+                trim((string) $order['first_name'] . ' ' . (string) $order['last_name']),
                 $order['link'],
                 $order['quantity'],
                 $serviceId,
                 $servicesById[$serviceId]['name'] ?? '',
-                $statusName,
-                $modeName,
-                $createdAt,
+                OrderStatusEnum::labelFor($order['status']),
+                OrderModeEnum::labelFor($order['mode']),
+                $formatter->asDatetime($order['created_at'], 'php:Y-m-d H:i:s'),
             ];
         }
     }

@@ -7,46 +7,71 @@ use app\modules\orders_listing\dto\OrdersResultDTO;
 use app\modules\orders_listing\enums\order\SearchTypeEnum;
 use app\modules\orders_listing\models\Order;
 use app\modules\orders_listing\models\User;
+use Generator;
 use yii\data\ActiveDataProvider;
 use yii\data\Pagination;
 use yii\db\Query;
-use Generator;
 
 class OrderRepository
 {
-    public function getOrdersByFilters(GetOrdersQuery $queryDTO, int $page = 1, int $perPage = 100): OrdersResultDTO
+    /**
+     * @param GetOrdersQuery $queryDTO
+     * @param int $pageSize
+     * @return OrdersResultDTO
+     */
+    public function getOrdersByFilters(GetOrdersQuery $queryDTO, int $pageSize): OrdersResultDTO
     {
-        $query = (new Query())->select([
-            'orders.id', 'orders.link', 'orders.quantity', 'orders.status', 'orders.mode', 'orders.created_at',
-            'orders.service_id', 'users.first_name', 'users.last_name'
-        ])->from(['orders' => Order::tableName()])
-            ->innerJoin(['users' => User::tableName()], 'orders.user_id = users.id');
+        $serviceCounts = $this->getServiceCounts($queryDTO);
 
-        $this->applyFilters($query, $queryDTO);
+        $serviceId = $queryDTO->getServiceId();
+        $totalCount = $serviceId === null
+            ? (int) array_sum($serviceCounts)
+            : ($serviceCounts[$serviceId] ?? 0);
 
-        $serviceCounts = $this->getServiceCounts($query);
-        $totalCount = (int) array_sum(array_column($serviceCounts, 'cnt'));
+        $pageCount = max(1, (int) ceil($totalCount / $pageSize));
         $pagination = new Pagination([
-            'page' => max(0, $page - 1),
-            'pageSize' => $perPage,
+            'page' => min($queryDTO->getPage(), $pageCount) - 1,
+            'pageSize' => $pageSize,
             'totalCount' => $totalCount,
+            'pageSizeParam' => false,
         ]);
-        $query->orderBy(['orders.id' => SORT_DESC]);
-        $serviceCounts = array_column($serviceCounts, 'cnt', 'service_id');
-        arsort($serviceCounts);
+
+        $query = $this->buildListQuery($queryDTO)->orderBy(['orders.id' => SORT_DESC]);
+
         $dataProvider = new ActiveDataProvider([
             'query' => $query,
             'pagination' => $pagination,
-            'sort' => false
+            'totalCount' => $totalCount,
+            'sort' => false,
         ]);
 
-        return new OrdersResultDTO(
-            $dataProvider,
-            $serviceCounts,
-        );
+        return new OrdersResultDTO($dataProvider, $serviceCounts);
     }
 
+    /**
+     * @param GetOrdersQuery $queryDTO
+     * @param int $batchSize
+     * @return Generator
+     */
     public function exportBatch(GetOrdersQuery $queryDTO, int $batchSize = 1000): Generator
+    {
+        $lastId = null;
+        do {
+            $query = $this->buildListQuery($queryDTO)
+                ->orderBy(['orders.id' => SORT_DESC])
+                ->limit($batchSize);
+            if ($lastId !== null) {
+                $query->andWhere(['<', 'orders.id', $lastId]);
+            }
+            $rows = $query->all();
+            foreach ($rows as $row) {
+                yield $row;
+            }
+            $lastId = $rows ? $rows[array_key_last($rows)]['id'] : null;
+        } while (count($rows) === $batchSize);
+    }
+
+    private function buildListQuery(GetOrdersQuery $queryDTO): Query
     {
         $query = (new Query())
             ->select([
@@ -54,45 +79,68 @@ class OrderRepository
                 'orders.service_id', 'users.first_name', 'users.last_name',
             ])
             ->from(['orders' => Order::tableName()])
-            ->innerJoin(['users' => User::tableName()], 'orders.user_id = users.id')
-            ->orderBy(['orders.id' => SORT_DESC]);
+            ->innerJoin(['users' => User::tableName()], 'orders.user_id = users.id');
 
-        $this->applyFilters($query, $queryDTO);
+        $this->applyCommonFilters($query, $queryDTO);
+        $this->applyServiceFilter($query, $queryDTO);
 
-        foreach ($query->each($batchSize) as $row) {
-            yield $row;
-        }
+        return $query;
     }
 
-    private function applyFilters(Query $query, GetOrdersQuery $queryDTO): void
+    /**
+     * @param GetOrdersQuery $queryDTO
+     * @return array<int, int> [service_id => count]
+     */
+    private function getServiceCounts(GetOrdersQuery $queryDTO): array
+    {
+        $query = (new Query())
+            ->select(['orders.service_id', 'cnt' => 'COUNT(*)'])
+            ->from(['orders' => Order::tableName()])
+            ->groupBy('orders.service_id');
+
+        if ($this->isUsernameSearch($queryDTO)) {
+            $query->innerJoin(['users' => User::tableName()], 'orders.user_id = users.id');
+        }
+
+        $this->applyCommonFilters($query, $queryDTO);
+
+        return array_map('intval', array_column($query->all(), 'cnt', 'service_id'));
+    }
+
+    private function applyCommonFilters(Query $query, GetOrdersQuery $queryDTO): void
     {
         $query->andFilterWhere(['orders.status' => $queryDTO->getStatus()])
-            ->andFilterWhere(['orders.mode' => $queryDTO->getMode()])
-            ->andFilterWhere(['orders.service_id' => $queryDTO->getServiceId()]);
+            ->andFilterWhere(['orders.mode' => $queryDTO->getMode()]);
 
-        if ($queryDTO->getSearch() !== null && $queryDTO->getSearch() !== '') {
-            $searchType = $queryDTO->getSearchType();
-            if ($searchType === SearchTypeEnum::id->value) {
-                $query->andWhere(['orders.id' => $queryDTO->getSearch()]);
-            }
-            if ($searchType === SearchTypeEnum::link->value) {
-                $query->andWhere(['orders.link' => $queryDTO->getSearch()]);
-            }
-            if ($searchType === SearchTypeEnum::username->value) {
-                $firstAndLastName = explode(' ', cleanLetters($queryDTO->getSearch()), 2);
+        if (!$queryDTO->hasSearch()) {
+            return;
+        }
+
+        $search = $queryDTO->getSearch();
+        switch ($queryDTO->getSearchType()) {
+            case SearchTypeEnum::id->value:
+                $query->andWhere(['orders.id' => $search]);
+                break;
+            case SearchTypeEnum::link->value:
+                $query->andWhere(['orders.link' => $search]);
+                break;
+            case SearchTypeEnum::username->value:
+                $firstAndLastName = explode(' ', cleanLetters($search), 2);
                 $firstName = !empty($firstAndLastName[0]) ? $firstAndLastName[0] : null;
                 $lastName = !empty($firstAndLastName[1]) ? $firstAndLastName[1] : null;
-                $query->andFilterWhere((['like', 'users.first_name', $firstName]))
-                    ->andFilterWhere((['like', 'users.last_name', $lastName]));
-            }
+                $query->andFilterWhere(['like', 'users.first_name', $firstName])
+                    ->andFilterWhere(['like', 'users.last_name', $lastName]);
+                break;
         }
     }
 
-    private function getServiceCounts(Query $query): array
+    private function applyServiceFilter(Query $query, GetOrdersQuery $queryDTO): void
     {
-        return (clone $query)
-            ->select(['orders.service_id', 'cnt' => 'COUNT(*)'])
-            ->groupBy('orders.service_id')
-            ->all();
+        $query->andFilterWhere(['orders.service_id' => $queryDTO->getServiceId()]);
+    }
+
+    private function isUsernameSearch(GetOrdersQuery $queryDTO): bool
+    {
+        return $queryDTO->hasSearch() && $queryDTO->getSearchType() === SearchTypeEnum::username->value;
     }
 }

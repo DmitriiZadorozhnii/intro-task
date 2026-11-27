@@ -10,18 +10,9 @@ return [
     'Canceled' => 'Отменён',
     'Error' => 'Ошибка',
 
-    'pending' => 'В ожидании',
-    'in_progress' => 'В работе',
-    'completed' => 'Завершён',
-    'canceled' => 'Отменён',
-    'error' => 'Ошибка',
-
     'All' => 'Все',
     'Manual' => 'Ручной',
     'Auto' => 'Авто',
-
-    'manual' => 'Ручной',
-    'auto' => 'Авто',
 
     'Search orders' => 'Поиск заказов',
     'Order ID' => 'ID заказа',
@@ -32,11 +23,15 @@ return [
     'User' => 'Пользователь',
     'Quantity' => 'Количество',
     'Service' => 'Сервис',
+    'Service ID' => 'ID сервиса',
+    'Service Name' => 'Название сервиса',
     'Status' => 'Статус',
-    'Mode' => 'Мод',
+    'Mode' => 'Режим',
     'Created' => 'Создан',
 
-    'No orders found.' => 'Заказы не найдены.',
+    'No orders found' => 'Заказы не найдены',
+    'Total: {totalCount}' => 'Всего: {totalCount}',
+    '{begin} to {end} of {totalCount}' => '{begin} – {end} из {totalCount}',
 
     'Toggle navigation' => 'Переключить навигацию',
 
@@ -44,4 +39,11 @@ return [
     '{total} orders' => 'Всего заказов: {total}',
 
     'Save result' => 'Сохранить результат',
+
+    'Search' => 'Поиск',
+    'Search type' => 'Тип поиска',
+    'Page' => 'Страница',
+    'Order ID must be a positive integer' => 'ID заказа должен быть положительным целым числом',
+    'Search query must be a string' => 'Поисковый запрос должен быть строкой',
+    'Search query must not exceed {max} characters' => 'Поисковый запрос не должен быть длиннее {max} символов',
 ];

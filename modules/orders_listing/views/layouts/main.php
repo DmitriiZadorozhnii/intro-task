@@ -4,12 +4,13 @@ declare(strict_types=1);
 
 use app\modules\orders_listing\assets\OrdersAsset;
 use yii\helpers\Html;
+use yii\helpers\Url;
 use yii\web\View;
 
 /** @var View $this */
 /** @var string $content */
 
-$bundle = OrdersAsset::register($this);
+OrdersAsset::register($this);
 
 $this->registerCss(<<<'CSS'
 .label-default {
@@ -28,7 +29,7 @@ CSS);
         <meta charset="<?= Html::encode(Yii::$app->charset) ?>">
         <meta http-equiv="X-UA-Compatible" content="IE=edge">
         <meta name="viewport" content="width=device-width, initial-scale=1">
-        <title><?= Html::encode($this->title ?: 'Orders') ?></title>
+        <title><?= Html::encode($this->title ?: Yii::t('orders', 'Orders')) ?></title>
         <?php $this->head() ?>
         <!--[if lt IE 9]>
         <script src="https://oss.maxcdn.com/html5shiv/3.7.2/html5shiv.min.js"></script>
@@ -41,7 +42,7 @@ CSS);
         <div class="container-fluid">
             <div class="navbar-header">
                 <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#bs-navbar-collapse">
-                    <span class="sr-only">Toggle navigation</span>
+                    <span class="sr-only"><?= Yii::t('orders', 'Toggle navigation') ?></span>
                     <span class="icon-bar"></span>
                     <span class="icon-bar"></span>
                     <span class="icon-bar"></span>
@@ -49,7 +50,7 @@ CSS);
             </div>
             <div class="collapse navbar-collapse" id="bs-navbar-collapse">
                 <ul class="nav navbar-nav">
-                    <li class="active"><a href="#">Orders</a></li>
+                    <li class="active"><a href="<?= Html::encode(Url::to(['order/index'])) ?>"><?= Yii::t('orders', 'Orders') ?></a></li>
                 </ul>
             </div>
         </div>
