@@ -46,16 +46,32 @@ $config = [
                 ],
             ],
         ],
+        'i18n' => [
+            'translations' => [
+                'orders*' => [
+                    'class' => \yii\i18n\PhpMessageSource::class,
+                    'basePath' => '@app/modules/orders_listing/messages',
+                    'sourceLanguage' => 'en-US',
+                    'forceTranslation' => true,
+                ],
+            ],
+        ],
         'db' => $db,
-        /*
         'urlManager' => [
             'enablePrettyUrl' => true,
             'showScriptName' => false,
             'rules' => [
+                'orders' => 'orders_listing/order/index',
             ],
         ],
-        */
+
     ],
+    'modules' => [
+        'orders_listing' => [
+            'class' => 'app\modules\orders_listing\Module',
+        ],
+    ],
+    'language' => env('APP_LANGUAGE', 'en'),
     'params' => $params,
 ];
 
